@@ -1,6 +1,8 @@
 package com.test.testassessment.model;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Table;
@@ -13,16 +15,23 @@ public class User extends BaseEntity {
 
     @Column(name = "fullname")
     private String fullName;
-    @Column(name = "username")
+    @Column(name = "username", unique = true, nullable = false)
     private String userName;
-
+    @Column(nullable = false)
+    @JsonIgnore
     private String password;
+    @JsonIgnore
+    private String salt;
 
-    public User(String id, ZonedDateTime creationDate, ZonedDateTime lastUpdated, String fullName, String userName, String password) {
+    public User(String id, ZonedDateTime creationDate, ZonedDateTime lastUpdated, String fullName, String userName, String password, String salt) {
         super(id, creationDate, lastUpdated);
         this.fullName = fullName;
         this.userName = userName;
         this.password = password;
+        this.salt = salt;
+    }
+
+    public User() {
     }
 
     public String getFullName() {
@@ -49,20 +58,12 @@ public class User extends BaseEntity {
         this.password = password;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        User user = (User) o;
-        return Objects.equals(fullName, user.fullName) &&
-                Objects.equals(userName, user.userName) &&
-                Objects.equals(password, user.password);
+    public String getSalt() {
+        return salt;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), fullName, userName, password);
+    public void setSalt(String salt) {
+        this.salt = salt;
     }
 
     @Override
@@ -71,6 +72,25 @@ public class User extends BaseEntity {
                 "fullName='" + fullName + '\'' +
                 ", userName='" + userName + '\'' +
                 ", password='" + password + '\'' +
+                ", salt='" + salt + '\'' +
                 '}';
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        User user = (User) o;
+        return Objects.equals(fullName, user.fullName) &&
+                Objects.equals(userName, user.userName) &&
+                Objects.equals(password, user.password) &&
+                Objects.equals(salt, user.salt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), fullName, userName, password, salt);
+    }
+
 }

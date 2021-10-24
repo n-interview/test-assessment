@@ -28,6 +28,9 @@ public abstract class BaseEntity {
         this.lastUpdated = lastUpdated;
     }
 
+    public BaseEntity() {
+    }
+
     @PrePersist
     protected void onCreate() {
         lastUpdated = creationDate = ZonedDateTime.now();
