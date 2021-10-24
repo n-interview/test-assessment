@@ -33,6 +33,7 @@ public class TokenServiceImpl implements TokenService {
             log.info("User {} already present in cache when generating a new token. Proceeding with generating a new token", user.getId());
             if (!isTokenValid(null, tokenCache.get(user.getId()))) {
                 tokenCache.put(user.getId(), token);
+                return token;
             }
         }
         tokenCache.put(user.getId(), token);

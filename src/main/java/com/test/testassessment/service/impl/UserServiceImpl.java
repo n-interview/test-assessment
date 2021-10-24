@@ -76,7 +76,7 @@ public class UserServiceImpl implements UserService {
                         return Base64.getEncoder().encodeToString(mapper.writeValueAsString(token).getBytes());
                     }
                     return null;
-                } catch (JsonProcessingException e) {
+                } catch (JsonProcessingException | IllegalArgumentException e) {
                     log.error("Could not authenticate user {}, exception ", userId, e);
                 }
             }
@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService {
         Token decodedToken = null;
         try {
             decodedToken = mapper.readValue(new String(Base64.getDecoder().decode(token)), Token.class);
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             log.error("Exception while validating token ", e);
         }
         if (tokenService.isTokenValid(userId, decodedToken)) {
@@ -102,12 +102,12 @@ public class UserServiceImpl implements UserService {
     @Override
     public boolean revokeToken(String userId, String token) {
         try {
-            Token decodedToken = mapper.readValue(token, Token.class);
+            Token decodedToken = mapper.readValue(new String(Base64.getDecoder().decode(token)), Token.class);
             if (tokenService.revokeToken(userId, decodedToken)) {
                 return true;
             }
             return false;
-        } catch (JsonProcessingException e) {
+        } catch (JsonProcessingException | IllegalArgumentException e) {
             log.error("Exception while revoking token ", e);
         }
         return false;
