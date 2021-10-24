@@ -33,9 +33,13 @@ public class UserController {
     }
 
     @PostMapping("/users")
-    public User addUser(@RequestBody User user) {
+    public ResponseEntity<User> addUser(@RequestBody User user) {
         log.debug("Adding user {}", user);
-        return userService.saveUser(user);
+        User userToReturn = userService.saveUser(user);
+        if (user != null) {
+            return new ResponseEntity<>(userToReturn, HttpStatus.ACCEPTED);
+        }
+        return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
     @PutMapping("/users/{id}")
@@ -44,7 +48,7 @@ public class UserController {
         if (!userService.validateToken(id, token)) {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
         }
-        User updateResult = userService.updateUser(user);
+        User updateResult = userService.updateUser(id, user);
         if (updateResult != null) {
             return new ResponseEntity<>(updateResult, HttpStatus.ACCEPTED);
         }

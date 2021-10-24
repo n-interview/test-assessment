@@ -7,8 +7,8 @@ import com.test.testassessment.model.Token;
 import com.test.testassessment.model.User;
 import com.test.testassessment.repository.UserRepository;
 import com.test.testassessment.service.UserService;
-import org.apache.commons.codec.binary.StringUtils;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -41,6 +41,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User saveUser(User user) {
+        if (user == null || StringUtils.isEmpty(user.getUserName()) || StringUtils.isEmpty(user.getPassword())) {
+            return null;
+        }
         String salt = generateSalt();
         user.setId(UUID.randomUUID().toString());
         user.setSalt(salt);
@@ -49,8 +52,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User updateUser(User user) {
-        Optional<User> oldUser = userRepository.findById(user.getId());
+    public User updateUser(String userId, User user) {
+        Optional<User> oldUser = userRepository.findById(userId);
         if (oldUser.isPresent()) {
             User userToUpdate = oldUser.get();
             if (!StringUtils.equals(hashPassword(userToUpdate.getSalt(), userToUpdate.getPassword()), hashPassword(userToUpdate.getSalt(), user.getPassword()))) {
@@ -62,20 +65,23 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public String authenticateUserByIdAndPassword(String id, String password) {
-        Optional<User> user = userRepository.findById(id);
+    public String authenticateUserByIdAndPassword(String userId, String password) {
+        Optional<User> user = userRepository.findById(userId);
         if (user.isPresent()) {
             User actualUser = user.get();
             if (StringUtils.equals(actualUser.getPassword(), hashPassword(actualUser.getSalt(), password))) {
                 Token token = tokenService.generateToken(actualUser);
                 try {
-                    return Base64.getEncoder().encodeToString(mapper.writeValueAsString(token).getBytes());
+                    if (token != null) {
+                        return Base64.getEncoder().encodeToString(mapper.writeValueAsString(token).getBytes());
+                    }
+                    return null;
                 } catch (JsonProcessingException e) {
-                    log.error("Could not authenticate user {}, exception ", id, e);
+                    log.error("Could not authenticate user {}, exception ", userId, e);
                 }
             }
         }
-        log.info("User {} could not be authenticated: user not found", id);
+        log.info("User {} could not be authenticated: user not found", userId);
         return null;
     }
 

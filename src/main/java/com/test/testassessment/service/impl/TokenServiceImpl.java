@@ -2,7 +2,7 @@ package com.test.testassessment.service.impl;
 
 import com.test.testassessment.model.Token;
 import com.test.testassessment.model.User;
-import org.apache.commons.codec.binary.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -101,7 +101,7 @@ public class TokenServiceImpl implements TokenService {
         }
         String userId = null;
         String tokenContent = token.getContent();
-        if (tokenContent != null) {
+        if (!StringUtils.isEmpty(tokenContent)) {
             String[] splitToken = new String(Base64.getDecoder().decode(tokenContent)).split("\\" + DELIMITER);
             if (splitToken.length == 2) {
                 userId = splitToken[0];

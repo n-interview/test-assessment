@@ -12,9 +12,9 @@ public interface UserService {
 
     User saveUser(User user);
 
-    User updateUser(User user);
+    User updateUser(String userId, User user);
 
-    String authenticateUserByIdAndPassword(String userName, String password);
+    String authenticateUserByIdAndPassword(String userId, String password);
 
     boolean validateToken(String userId, String token);
 

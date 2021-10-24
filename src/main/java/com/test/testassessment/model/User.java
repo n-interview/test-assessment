@@ -2,6 +2,7 @@ package com.test.testassessment.model;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -18,7 +19,7 @@ public class User extends BaseEntity {
     @Column(name = "username", unique = true, nullable = false)
     private String userName;
     @Column(nullable = false)
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     @JsonIgnore
     private String salt;
