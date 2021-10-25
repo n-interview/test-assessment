@@ -25,8 +25,8 @@ public class UserServiceImpl implements UserService {
     private static final ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private final String DATA_FIELD_NAME = "data";
-    private UserRepository userRepository;
-    private TokenService tokenService;
+    private final UserRepository userRepository;
+    private final TokenService tokenService;
 
 
     public UserServiceImpl(UserRepository userRepository, TokenService tokenService) {
@@ -56,9 +56,21 @@ public class UserServiceImpl implements UserService {
         Optional<User> oldUser = userRepository.findById(userId);
         if (oldUser.isPresent()) {
             User userToUpdate = oldUser.get();
-            if (!StringUtils.equals(hashPassword(userToUpdate.getSalt(), userToUpdate.getPassword()), hashPassword(userToUpdate.getSalt(), user.getPassword()))) {
+            if (user.getPassword() != null && !StringUtils.equals(hashPassword(userToUpdate.getSalt(), userToUpdate.getPassword()), hashPassword(userToUpdate.getSalt(), user.getPassword()))) {
+                log.debug("User {} has requested a password change when updating", userId);
                 user.setPassword(hashPassword(userToUpdate.getSalt(), user.getPassword()));
+            } else {
+                user.setPassword(userToUpdate.getPassword());
             }
+            if (user.getUserName() == null) {
+                user.setUserName(userToUpdate.getUserName());
+            }
+            if (user.getFullName() == null) {
+                user.setFullName(userToUpdate.getFullName());
+            }
+            user.setSalt(userToUpdate.getSalt());
+            user.setId(userId);
+            user.setCreationDate(userToUpdate.getCreationDate());
             return userRepository.save(user);
         }
         return null;
@@ -93,10 +105,7 @@ public class UserServiceImpl implements UserService {
         } catch (JsonProcessingException | IllegalArgumentException e) {
             log.error("Exception while validating token ", e);
         }
-        if (tokenService.isTokenValid(userId, decodedToken)) {
-            return true;
-        }
-        return false;
+        return tokenService.isTokenValid(userId, decodedToken);
     }
 
     @Override
@@ -104,6 +113,7 @@ public class UserServiceImpl implements UserService {
         try {
             Token decodedToken = mapper.readValue(new String(Base64.getDecoder().decode(token)), Token.class);
             if (tokenService.revokeToken(userId, decodedToken)) {
+                log.debug("User {} has revoked their token", userId);
                 return true;
             }
             return false;
@@ -127,7 +137,7 @@ public class UserServiceImpl implements UserService {
 
     private String generateSalt() {
         SecureRandom secureRandom = new SecureRandom();
-        byte bytes[] = new byte[32];
+        byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
         return new String(Base64.getEncoder().encode(bytes));
     }

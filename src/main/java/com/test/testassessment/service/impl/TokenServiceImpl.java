@@ -20,7 +20,7 @@ public class TokenServiceImpl implements TokenService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     @Value("${test.assessment.token.expiry.minutes:5}")
     private String tokenDuration;
-    private Map<String, Token> tokenCache = new HashMap<>(); // keyed by userId
+    private final Map<String, Token> tokenCache = new HashMap<>(); // keyed by userId
 
     @Override
     public Token generateToken(User user) {
@@ -36,6 +36,8 @@ public class TokenServiceImpl implements TokenService {
                 return token;
             }
         }
+        log.debug("User {} requested a new token", user.getId());
+        log.debug("Cache is now {}", tokenCache);
         tokenCache.put(user.getId(), token);
         return token;
     }
@@ -57,11 +59,8 @@ public class TokenServiceImpl implements TokenService {
             if (!tokenCache.containsKey(userIdFromToken)) {
                 return false;
             }
-            if (isTokenExpired(tokenCache.get(userIdFromToken))) {
-                return false;
-            }
+            return !isTokenExpired(tokenCache.get(userIdFromToken));
         }
-        return true;
     }
 
     @Override
@@ -75,6 +74,8 @@ public class TokenServiceImpl implements TokenService {
         }
         if (userIdFromToken != null) {
             if (tokenCache.get(userIdFromToken) != null) {
+                log.debug("User {} found in the cache while revoking their token", userId);
+                log.debug("Cache is now {}", tokenCache);
                 tokenCache.remove(userIdFromToken);
                 return true;
             }
@@ -111,6 +112,7 @@ public class TokenServiceImpl implements TokenService {
                 return userId;
             }
         }
+        log.debug("Could not parse token {}", token);
         return null;
     }
 

@@ -6,7 +6,6 @@ import com.test.testassessment.service.impl.TokenServiceImpl;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -20,11 +19,20 @@ public class TokenServiceTests {
 
     @Autowired
     private TokenServiceImpl tokenService;
+
     private static Map<String, Token> tokenCache;
+
+    private static final String TOKEN_CACHE = "tokenCache";
+
+    private static final String DELIMITER = ".";
+
+    private static final String TEST_TOKEN = "1.jsmith";
+
+    private static final String TEST_STRING = "test";
 
     @BeforeEach
     public void setTokenCache() {
-        tokenCache = (Map<String, Token>) ReflectionTestUtils.getField(tokenService, "tokenCache");
+        tokenCache = (Map<String, Token>) ReflectionTestUtils.getField(tokenService, TOKEN_CACHE);
     }
 
     @Test
@@ -38,11 +46,9 @@ public class TokenServiceTests {
 
     @Test
     public void generateTokenForValidUser() {
-        User user = new User();
-        user.setId("1");
-        user.setUserName("jsmith");
+        User user = getTestUser();
 
-        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + "." + user.getUserName()).getBytes());
+        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + DELIMITER + user.getUserName()).getBytes());
 
         Token token = tokenService.generateToken(user);
         Assertions.assertThat(token.getContent()).isEqualTo(expectedTokenContent);
@@ -52,11 +58,9 @@ public class TokenServiceTests {
 
     @Test
     public void generateTokenForValidUserTwice() {
-        User user = new User();
-        user.setId("1");
-        user.setUserName("jsmith");
+        User user = getTestUser();
 
-        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + "." + user.getUserName()).getBytes());
+        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + DELIMITER + user.getUserName()).getBytes());
 
         Token token1 = tokenService.generateToken(user);
         Token token2 = tokenService.generateToken(user);
@@ -72,18 +76,16 @@ public class TokenServiceTests {
 
     @Test
     public void generateTokenAfterExpiry() {
-        User user = new User();
-        user.setId("1");
-        user.setUserName("jsmith");
+        User user = getTestUser();
 
-        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + "." + user.getUserName()).getBytes());
+        String expectedTokenContent = Base64.getEncoder().encodeToString((user.getId() + DELIMITER + user.getUserName()).getBytes());
 
         Token token = tokenService.generateToken(user);
         Assertions.assertThat(tokenCache.get(user.getId())).isNotNull();
 
         token.setExpiryDate(ZonedDateTime.now().minusYears(1));
         tokenCache.put(user.getId(), token);
-        ReflectionTestUtils.setField(tokenService, "tokenCache", tokenCache);
+        ReflectionTestUtils.setField(tokenService, TOKEN_CACHE, tokenCache);
 
         Token token2 = tokenService.generateToken(user);
         Assertions.assertThat(tokenCache.get(user.getId()).getExpiryDate()).isAfter(ZonedDateTime.now());
@@ -91,11 +93,11 @@ public class TokenServiceTests {
 
     @Test
     public void isTokenValidSuccess() {
-        String tokenContent = Base64.getEncoder().encodeToString("1.jsmith".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_TOKEN.getBytes());
         Token token = new Token(tokenContent, ZonedDateTime.now().plusMinutes(5));
 
         tokenCache.put("1", token);
-        ReflectionTestUtils.setField(tokenService, "tokenCache", tokenCache);
+        ReflectionTestUtils.setField(tokenService, TOKEN_CACHE, tokenCache);
 
         Assertions.assertThat(tokenService.isTokenValid("1", token)).isTrue();
     }
@@ -107,21 +109,21 @@ public class TokenServiceTests {
 
     @Test
     public void isTokenValidNullUser() {
-        String tokenContent = Base64.getEncoder().encodeToString("test".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_STRING.getBytes());
         Assertions.assertThat(tokenService.isTokenValid(null, new Token(tokenContent, ZonedDateTime.now()))).isFalse();
 
     }
 
     @Test
     public void isTokenValidNullUserNullUserInToken() {
-        String tokenContent = Base64.getEncoder().encodeToString("test".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_STRING.getBytes());
         Assertions.assertThat(tokenService.isTokenValid("1", new Token(tokenContent, ZonedDateTime.now()))).isFalse();
 
     }
 
     @Test
     public void isTokenValidNullUserTokenNotInCache() {
-        String tokenContent = Base64.getEncoder().encodeToString("1.jsmith".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_TOKEN.getBytes());
         Token token = new Token(tokenContent, ZonedDateTime.now().plusMinutes(5));
 
         Assertions.assertThat(tokenService.isTokenValid(null, token)).isFalse();
@@ -130,11 +132,11 @@ public class TokenServiceTests {
 
     @Test
     public void revokeTokenSuccess() {
-        String tokenContent = Base64.getEncoder().encodeToString("1.jsmith".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_TOKEN.getBytes());
         Token token = new Token(tokenContent, ZonedDateTime.now().plusMinutes(5));
 
         tokenCache.put("1", token);
-        ReflectionTestUtils.setField(tokenService, "tokenCache", tokenCache);
+        ReflectionTestUtils.setField(tokenService, TOKEN_CACHE, tokenCache);
 
         Assertions.assertThat(tokenService.revokeToken("1", token)).isTrue();
         Assertions.assertThat(tokenCache.size()).isEqualTo(0);
@@ -147,11 +149,17 @@ public class TokenServiceTests {
 
     @Test
     public void revokeTokenDifferentUserIds() {
-        String tokenContent = Base64.getEncoder().encodeToString("1.jsmith".getBytes());
+        String tokenContent = Base64.getEncoder().encodeToString(TEST_TOKEN.getBytes());
         Token token = new Token(tokenContent, ZonedDateTime.now().plusMinutes(5));
 
         Assertions.assertThat(tokenService.revokeToken("2", token)).isFalse();
     }
 
+    private static User getTestUser() {
+        User user = new User();
+        user.setId("1");
+        user.setUserName("jsmith");
+        return user;
+    }
 
 }

@@ -14,7 +14,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import java.time.ZonedDateTime;
@@ -38,6 +37,13 @@ public class UserServiceTests {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static final String SOME_TOKEN = "SOME_TOKEN";
+
+    private static final String RAND_STRING = "RAND_STRING";
+
+    private static final String DATA = "data";
+
+
     @BeforeAll
     private static void setMapperModules() {
         objectMapper.findAndRegisterModules();
@@ -45,10 +51,7 @@ public class UserServiceTests {
 
     @Test
     public void saveUserSuccess() {
-        User userToReturn = new User();
-        userToReturn.setFullName("James Ditter");
-        userToReturn.setUserName("jditter");
-        userToReturn.setPassword("J@me$5");
+        User userToReturn = getUser("1", "James Ditter", "jditter", null, null);
 
         when(userRepository.save(any(User.class))).thenReturn(userToReturn);
 
@@ -71,13 +74,8 @@ public class UserServiceTests {
 
     @Test
     public void generateTokenSuccess() {
-        User userToReturn = new User();
-        userToReturn.setId("1");
-        userToReturn.setFullName("James Ditter");
-        userToReturn.setUserName("jditter");
-        userToReturn.setSalt("ABC");
-        userToReturn.setPassword(DigestUtils.sha256Hex(userToReturn.getSalt() + "J@me$5"));
-        Token mockToken = new Token("SOME_TOKEN", ZonedDateTime.now().plusMinutes(5));
+        User userToReturn = getUser("1", "James Ditter", "jditter", "ABC", "J@me$5");
+        Token mockToken = new Token(SOME_TOKEN, ZonedDateTime.now().plusMinutes(5));
 
         when(userRepository.findById(any())).thenReturn(Optional.of(userToReturn));
         when(tokenService.generateToken(any())).thenReturn(mockToken);
@@ -90,12 +88,7 @@ public class UserServiceTests {
 
     @Test
     public void generateTokenFailure() {
-        User userToReturn = new User();
-        userToReturn.setId("1");
-        userToReturn.setFullName("James Ditter");
-        userToReturn.setUserName("jditter");
-        userToReturn.setSalt("ABC");
-        userToReturn.setPassword(DigestUtils.sha256Hex(userToReturn.getSalt() + "J@me$5"));
+        User userToReturn = getUser("1", "James Ditter", "jditter", "ABC", "J@me$5");
 
         when(userRepository.findById(any())).thenReturn(Optional.of(userToReturn));
         when(tokenService.generateToken(any())).thenReturn(null);
@@ -128,21 +121,11 @@ public class UserServiceTests {
 
     @Test
     public void updateUserSuccess() {
-        User user = new User();
-        user.setId("1");
-        user.setFullName("James Ditter");
-        user.setUserName("jditter");
-        user.setSalt("ABC");
-        user.setPassword(DigestUtils.sha256Hex(user.getSalt() + "J@me$5"));
+        User user = getUser("1", "James Ditter", "jditter", "ABC", "J@me$5");
 
         when(userRepository.findById("1")).thenReturn(Optional.of(user));
 
-        User updatedUser = new User();
-        updatedUser.setId("1");
-        updatedUser.setFullName("James Ditar");
-        updatedUser.setUserName("jditar");
-        updatedUser.setSalt("ABC");
-        updatedUser.setPassword(DigestUtils.sha256Hex(updatedUser.getSalt() + "J@me$5"));
+        User updatedUser = getUser("1", "James Ditar", "jditar", "ABC", "J@me$5");
 
         when(userRepository.save(updatedUser)).thenReturn(updatedUser);
 
@@ -153,21 +136,11 @@ public class UserServiceTests {
 
     @Test
     public void updateUserWithPasswordChangeSuccess() {
-        User user = new User();
-        user.setId("1");
-        user.setFullName("James Ditter");
-        user.setUserName("jditter");
-        user.setSalt("ABC");
-        user.setPassword(DigestUtils.sha256Hex(user.getSalt() + "J@me$5"));
+        User user = getUser("1", "James Ditter", "jditter", "ABC", "J@me$5");
 
         when(userRepository.findById("1")).thenReturn(Optional.of(user));
 
-        User updatedUser = new User();
-        updatedUser.setId("1");
-        updatedUser.setFullName("James Ditar");
-        updatedUser.setUserName("jditar");
-        updatedUser.setSalt("ABCD");
-        updatedUser.setPassword(DigestUtils.sha256Hex(updatedUser.getSalt() + "J@me$6"));
+        User updatedUser = getUser("1", "James Ditar", "jditar", "ABCD", "J@me$6");
 
         when(userRepository.save(updatedUser)).thenReturn(updatedUser);
 
@@ -178,12 +151,7 @@ public class UserServiceTests {
 
     @Test
     public void updateUserWithNoMatchingId() {
-        User user = new User();
-        user.setId("2");
-        user.setFullName("James Ditter");
-        user.setUserName("jditter");
-        user.setSalt("ABC");
-        user.setPassword(DigestUtils.sha256Hex(user.getSalt() + "J@me$5"));
+        User user = getUser("2", "James Ditter", "jditter", "ABC", "J@me$5");
 
         when(userRepository.findById("2")).thenReturn(Optional.empty());
 
@@ -195,7 +163,7 @@ public class UserServiceTests {
 
     @Test
     public void validateTokenSuccess() throws JsonProcessingException {
-        Token mockToken = new Token("SOME_TOKEN", ZonedDateTime.now().plusMinutes(5));
+        Token mockToken = new Token(SOME_TOKEN, ZonedDateTime.now().plusMinutes(5));
         String base64EncodedToken = Base64.getEncoder().encodeToString(objectMapper.writeValueAsString(mockToken).getBytes());
 
         when(tokenService.isTokenValid(eq("1"), any())).thenReturn(true);
@@ -205,7 +173,7 @@ public class UserServiceTests {
 
     @Test
     public void validateTokenFailture() throws JsonProcessingException {
-        Token mockToken = new Token("SOME_TOKEN", ZonedDateTime.now().plusMinutes(5));
+        Token mockToken = new Token(SOME_TOKEN, ZonedDateTime.now().plusMinutes(5));
         String base64EncodedToken = Base64.getEncoder().encodeToString(objectMapper.writeValueAsString(mockToken).getBytes());
 
         when(tokenService.isTokenValid(eq("1"), any())).thenReturn(false);
@@ -217,12 +185,12 @@ public class UserServiceTests {
     public void validateTokenInvalidToken() {
         when(tokenService.isTokenValid(any(), any())).thenReturn(false);
 
-        Assertions.assertThat(userService.validateToken("1", "RAND_STRING")).isEqualTo(false);
+        Assertions.assertThat(userService.validateToken("1", RAND_STRING)).isEqualTo(false);
     }
 
     @Test
     public void revokeTokenSuccess() throws JsonProcessingException {
-        Token mockToken = new Token("SOME_TOKEN", ZonedDateTime.now().plusMinutes(5));
+        Token mockToken = new Token(SOME_TOKEN, ZonedDateTime.now().plusMinutes(5));
         String base64EncodedToken = Base64.getEncoder().encodeToString(objectMapper.writeValueAsString(mockToken).getBytes());
 
         when(tokenService.revokeToken(eq("1"), any())).thenReturn(true);
@@ -232,7 +200,7 @@ public class UserServiceTests {
 
     @Test
     public void revokeTokenFailure() throws JsonProcessingException {
-        Token mockToken = new Token("SOME_TOKEN", ZonedDateTime.now().plusMinutes(5));
+        Token mockToken = new Token(SOME_TOKEN, ZonedDateTime.now().plusMinutes(5));
         String base64EncodedToken = Base64.getEncoder().encodeToString(objectMapper.writeValueAsString(mockToken).getBytes());
 
         when(tokenService.revokeToken(eq("1"), any())).thenReturn(false);
@@ -245,17 +213,27 @@ public class UserServiceTests {
     public void revokeTokenInvalidToken() {
         when(tokenService.revokeToken(any(), any())).thenReturn(false);
 
-        Assertions.assertThat(userService.revokeToken("1", "RAND_STRING")).isEqualTo(false);
+        Assertions.assertThat(userService.revokeToken("1", RAND_STRING)).isEqualTo(false);
     }
 
     @Test
     public void buildResponseSuccess() throws JsonProcessingException {
-        String data = userService.buildResponse("RAND_STRING");
+        String data = userService.buildResponse(RAND_STRING);
         ObjectNode parsedData = (ObjectNode) objectMapper.readTree(data);
 
         Assertions.assertThat(parsedData != null).isTrue();
-        Assertions.assertThat(parsedData.get("data") != null).isTrue();
-        Assertions.assertThat(parsedData.get("data").asText()).isEqualTo("RAND_STRING");
+        Assertions.assertThat(parsedData.get(DATA) != null).isTrue();
+        Assertions.assertThat(parsedData.get(DATA).asText()).isEqualTo(RAND_STRING);
+    }
+
+    private static User getUser(String id, String fullName, String userName, String salt, String password) {
+        User userToReturn = new User();
+        userToReturn.setId(id);
+        userToReturn.setFullName(fullName);
+        userToReturn.setUserName(userName);
+        userToReturn.setSalt(salt);
+        userToReturn.setPassword(DigestUtils.sha256Hex(userToReturn.getSalt() + password));
+        return userToReturn;
     }
 
 }

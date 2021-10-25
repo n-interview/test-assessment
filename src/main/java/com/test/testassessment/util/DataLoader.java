@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class DataLoader implements ApplicationRunner {
 
-    private UserService userService;
+    private final UserService userService;
 
     public DataLoader(UserService userService) {
         this.userService = userService;

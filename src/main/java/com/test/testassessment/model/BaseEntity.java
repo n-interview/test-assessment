@@ -17,7 +17,7 @@ public abstract class BaseEntity {
     @Column(insertable = false, nullable = false, unique = true, updatable = false)
     @Id
     private String id;
-    @Column(columnDefinition = "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP", name = "creationdate")
+    @Column(columnDefinition = "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP", name = "creationdate", updatable = false)
     private ZonedDateTime creationDate;
     @Column(columnDefinition = "TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP", name = "lastupdated")
     private ZonedDateTime lastUpdated;
